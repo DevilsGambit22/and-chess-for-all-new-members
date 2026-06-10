@@ -1,103 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <style>
-    body {
-      margin: 0;
-      background: transparent;
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-    }
+<meta charset="UTF-8">
 
-    .board {
-      background: rgba(0,0,0,0.85);
-      border: 2px solid #ffd700;
-      border-radius: 18px;
-      padding: 12px;
-      box-shadow: 0 0 12px #ffd700;
-    }
+<style>
+body {
+  margin: 0;
+  background: transparent;
+  font-family: Arial, sans-serif;
+  color: #f5f5f5;
+  text-align: center;
+}
 
-    h2 {
-      color: #ffd700;
-      font-size: 18px;
-      margin: 5px 0 12px;
-      text-shadow: 0 0 8px #ffd700;
-    }
+.board {
+  background: #050505;
+  border: 2px solid #ffd700;
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 0 14px #ffd700;
+}
 
-    .member {
-      background: rgba(255,215,0,0.08);
-      border: 1px solid rgba(255,215,0,0.45);
-      border-radius: 10px;
-      margin: 8px 0;
-      padding: 8px;
-      font-size: 14px;
-    }
+h2 {
+  color: #ffd700;
+  margin: 5px 0 12px;
+  font-size: 20px;
+  text-shadow: 0 0 8px #ffd700;
+}
 
-    a {
-      color: #ffd700;
-      text-decoration: none;
-      font-weight: bold;
-    }
+.member {
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.55);
+  border-radius: 10px;
+  padding: 8px;
+  margin: 8px 0;
+}
 
-    .small {
-      font-size: 11px;
-      color: #ccc;
-    }
-  </style>
+a {
+  color: #ffd700;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.small {
+  color: #cccccc;
+  font-size: 11px;
+  margin-top: 3px;
+}
+</style>
 </head>
 
 <body>
-  <div class="board">
-    <h2>♟️ Newest Members ♟️</h2>
-    <div id="members">Loading members...</div>
-  </div>
 
-  <script>
-    const clubSlug = "and-chess-for-all-1";
+<div class="board">
+  <h2>👑 Newest Members</h2>
+  <div id="members">Loading newest members...</div>
+</div>
 
-    fetch(`https://api.chess.com/pub/club/${clubSlug}/members`)
-      .then(response => response.json())
-      .then(data => {
-        const allMembers = [
-          ...(data.weekly || []),
-          ...(data.monthly || []),
-          ...(data.all_time || [])
-        ];
+<script>
+const clubSlug = "and-chess-for-all-1";
 
-        const uniqueMembers = [];
-        const seen = new Set();
+fetch("https://api.chess.com/pub/club/" + clubSlug + "/members")
+  .then(response => response.json())
+  .then(data => {
+    let members = [];
 
-        allMembers.forEach(member => {
-          if (!seen.has(member.username)) {
-            seen.add(member.username);
-            uniqueMembers.push(member);
-          }
-        });
+    if (data.weekly) members = members.concat(data.weekly);
+    if (data.monthly) members = members.concat(data.monthly);
+    if (data.all_time) members = members.concat(data.all_time);
 
-        uniqueMembers.sort((a, b) => b.joined - a.joined);
+    members = members
+      .filter((member, index, self) =>
+        index === self.findIndex(m => m.username === member.username)
+      )
+      .sort((a, b) => b.joined - a.joined)
+      .slice(0, 5);
 
-        const newest = uniqueMembers.slice(0, 5);
+    if (members.length === 0) {
+      document.getElementById("members").innerHTML = "No members found.";
+      return;
+    }
 
-        document.getElementById("members").innerHTML = newest.map(member => {
-          const joinDate = new Date(member.joined * 1000).toLocaleDateString();
+    document.getElementById("members").innerHTML = members.map(member => {
+      const date = member.joined
+        ? new Date(member.joined * 1000).toLocaleDateString()
+        : "Recently";
 
-          return `
-            <div class="member">
-              👋 Welcome<br>
-              <a href="https://www.chess.com/member/${member.username}" target="_blank">
-                @${member.username}
-              </a>
-              <div class="small">Joined ${joinDate}</div>
-            </div>
-          `;
-        }).join("");
-      })
-      .catch(error => {
-        document.getElementById("members").innerHTML =
-          "Could not load members.";
-      });
-  </script>
+      return `
+        <div class="member">
+          👋 Welcome<br>
+          <a href="https://www.chess.com/member/${member.username}" target="_blank">
+            @${member.username}
+          </a>
+          <div class="small">Joined ${date}</div>
+        </div>
+      `;
+    }).join("");
+  })
+  .catch(() => {
+    document.getElementById("members").innerHTML =
+      "Unable to load members.";
+  });
+</script>
+
 </body>
 </html>
